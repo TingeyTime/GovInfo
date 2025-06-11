@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: govinfo_postgres
+    environment:
+      POSTGRES_DB: govinfo
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d govinfo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - govinfo
+
+  # Test Database (separate instance)
+  postgres_test:
+    image: postgres:15-alpine
+    container_name: govinfo_postgres_test
+    environment:
+      POSTGRES_DB: govinfo_test
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpass
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - govinfo
+    profiles:
+      - test
+
+  # pgAdmin for database management (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: govinfo_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@govinfo.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - govinfo
+    profiles:
+      - admin
+
+  # Redis for job queues (if needed later)
+  redis:
+    image: redis:7-alpine
+    container_name: govinfo_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - govinfo
+    profiles:
+      - cache
+
+  # Development API container (optional - for testing containerized deployment)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: govinfo_api
+    environment:
+      - DATABASE_URL=postgres://dev:devpass@postgres:5432/govinfo?sslmode=disable
+      - PORT=8080
+      - ENV=development
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - /app/bin  # Exclude binary directory
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - govinfo
+    profiles:
+      - api
+
+volumes:
+  postgres_data:
+    driver: local
+  postgres_test_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  govinfo:
+    driver: bridge
