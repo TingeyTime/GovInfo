@@ -2,10 +2,11 @@
 
 > 🏛️ **Get your government information delivered straight to your phone**
 
-[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-336791?style=flat&logo=postgresql&logoColor=white)](https://postgresql.org/)
-[![Twilio](https://img.shields.io/badge/Twilio-SMS-F22F46?style=flat&logo=twilio&logoColor=white)](https://twilio.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go 1.21+](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/)
+[![PostgreSQL 13+](https://img.shields.io/badge/PostgreSQL-13+-336791?style=flat&logo=postgresql&logoColor=white)](https://postgresql.org/)
+[![Twilio SMS](https://img.shields.io/badge/Twilio-SMS-F22F46?style=flat&logo=twilio&logoColor=white)](https://twilio.com/)
+[![Docker](https://img.shields.io/docker/:govinfo-blue?style=flat)](https://hub.docker.com/r/tingeytime/govinfo)
+[![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 GovInfo is an opt-in SMS service that delivers personalized government information based on your address. Stay informed about your elected officials, upcoming legislation, and local government activities—all through simple text messages.
 
@@ -64,17 +65,9 @@ GovInfo is an opt-in SMS service that delivers personalized government informati
 GovInfo uses a clean, scalable architecture designed for reliability and performance:
 
 ```
-┌─────────────────┐     ┌──────────────────┐
-│   REST API      │     │   Batch Jobs     │
-│ (user management)│     │ (weekly updates) │
-└─────────┬───────┘     └─────────┬────────┘
-          │                       │
-          └───────┬───────────────┘
-                  │
-            ┌─────▼──────┐    ┌─────────────┐
-            │ PostgreSQL │    │   Twilio    │
-            │  Database  │    │ SMS Gateway │
-            └────────────┘    └─────────────┘
+    [HTTP API] ←→ [handlers] ←→ [services] ←→ [database]
+         ↑               ↓
+     [Twilio] ←← [batch job scheduler]
 ```
 
 ### Tech Stack
